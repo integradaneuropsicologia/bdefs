@@ -75,7 +75,7 @@
 <body>
 <div class="wrap">
   <div class="card">
-    <h1>BDEFS — Disfunção Executiva (Autorrelato)</h1>
+    <h1>BDEFS — Disfunção Executiva</h1>
     <p class="muted">
       Marque o quanto cada afirmação descreve você <b>(1 = raramente/nunca, 2 = às vezes, 3 = frequentemente, 4 = muito frequentemente)</b>.
     </p>
@@ -141,8 +141,7 @@ function goPortalWithToken(){
   }
 }
 
-/* ===== ITENS (1..89) ===== */
-/* Cole os textos oficiais no array abaixo (mantive placeholders) */
+
 const ITEMS = [
   "Procrastino ou adio fazer as coisas até o último minuto.",
   "Tenho pouca noção de tempo.",
@@ -236,13 +235,13 @@ const ITEMS = [
 ].map((t,i)=>({ text: `${i+1}. ${t}` }));
 
 
-/* Pontos de início das seções para exibir cabeçalhos bonitos */
+
 const SECTION_LABELS = {
-  1:  "Seção 1 — Gerenciamento de tempo (1–21)",
-  22: "Seção 2 — Organização / Resolução de problemas (22–45)",
-  46: "Seção 3 — Autocontrole (46–64)",
-  65: "Seção 4 — Motivação (65–76)",
-  77: "Seção 5 — Regulação emocional (77–89)"
+  1:  "Seção 1 — Gerenciamento de tempo",
+  22: "Seção 2 — Organização / Resolução de problemas",
+  46: "Seção 3 — Autocontrole",
+  65: "Seção 4 — Motivação",
+  77: "Seção 5 — Regulação emocional"
 };
 
 /* ===== SUBSETS para CÁLCULOS ===== */
