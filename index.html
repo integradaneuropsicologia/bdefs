@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>BDEFS</title>
+<style>
+  :root{
+    --bg:#0e1625; --card:#14213b; --line:#2b3f66;
+    --text:#f8fafc; --muted:#cbd5e1;
+    --pri:#6d28d9; --ok:#10b981; --err:#ef4444; --warn:#f59e0b;
+    --chip:#0b1220; --chipHover:#0f1a2e;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  }
+  .wrap{max-width:1024px;margin:20px auto;padding:0 16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+  h1{margin:0 0 6px;font-size:1.45rem}
+  .muted{color:var(--muted)}
+  .hsec{margin:18px 0 10px;font-weight:700;color:#e2e8f0}
+
+  .grid-info{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0 6px}
+  @media (max-width:720px){.grid-info{grid-template-columns:1fr}}
+  .info{background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .info b{display:block;margin-bottom:4px;color:#e2e8f0}
+
+  /* ===== ITENS ===== */
+  .item{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(0,0,0,.18);margin-bottom:12px}
+  .stem{font-size:1rem}
+
+  /* Escala em botões (1..4) */
+  .scale{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .seg{
+    position:relative; display:inline-flex; align-items:center; gap:8px;
+    background:var(--chip); border:1px solid var(--line); border-radius:999px; padding:4px;
+  }
+  .seg input{position:absolute; opacity:0; pointer-events:none}
+  .seg .opt{
+    padding:8px 10px; border-radius:999px; cursor:pointer; font-size:.9rem;
+    color:var(--muted); transition:all .15s ease;
+  }
+  .seg input:checked + .opt{ background:#1f2a44; color:#fff; box-shadow:0 0 0 1px #4f70ff inset }
+  .seg .opt:hover{ background:var(--chipHover); color:#fff }
+
+  @media (max-width:560px){
+    .item{grid-template-columns:1fr}
+    .scale{justify-content:flex-start}
+  }
+
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 12px}
+  .pill{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--line);background:rgba(0,0,0,.25);font-size:.86rem}
+
+  /* Ações */
+  .btn{display:inline-flex;align-items:center;gap:10px;background:var(--pri);border:none;color:#fff;padding:12px 16px;border-radius:12px;cursor:pointer;font-weight:600}
+  .btn.ok{background:var(--ok)}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+
+  /* Mensagens */
+  .msg{margin:12px 0;padding:12px;border-radius:10px}
+  .okbox{background:#06351f;border:1px solid #0e6c45;color:#c8ffe3}
+  .errbox{background:#3b0d0d;border:1px solid #7f1d1d;color:#ffd5d5}
+  .warnbox{background:#3a2903;border:1px solid #885e09;color:#ffe6b0}
+
+  /* Progresso */
+  .progress{height:10px;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .bar{height:100%;width:0%;background:linear-gradient(90deg, #6d28d9, #10b981)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>BDEFS — Disfunção Executiva (Autorrelato)</h1>
+    <p class="muted">
+      Marque o quanto cada afirmação descreve você <b>(1 = raramente/nunca, 2 = às vezes, 3 = frequentemente, 4 = muito frequentemente)</b>.
+    </p>
+    <div class="legend">
+      <span class="pill">1 Raramente/Nunca</span>
+      <span class="pill">2 Às vezes</span>
+      <span class="pill">3 Frequentemente</span>
+      <span class="pill">4 Muito frequentemente</span>
+    </div>
+
+    <div id="pacInfo" class="grid-info" style="display:none;"></div>
+
+    <div id="progressWrap" style="display:none; gap:8px; align-items:center; margin:8px 0 0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px">
+        <span class="muted" id="progressText">Progresso: 0/89</span>
+        <button id="clearDraft" class="btn ghost" type="button" title="Limpar rascunho local">Limpar rascunho</button>
+      </div>
+      <div class="progress"><div class="bar" id="bar"></div></div>
+    </div>
+
+    <form id="form" style="margin-top:14px; display:none;" novalidate>
+      <div id="qs"></div>
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+        <button id="btnSubmit" class="btn ok" type="submit">Enviar respostas</button>
+        <button id="btnSave" class="btn ghost" type="button" title="Salvar rascunho">Salvar rascunho</button>
+      </div>
+      <div id="msg" class="msg" style="display:none" role="alert" aria-live="polite"></div>
+    </form>
+
+    <div id="alert" class="msg" style="display:none" role="alert" aria-live="assertive"></div>
+  </div>
+</div>
+
+<script>
+/* ===== CONFIG ===== */
+const SHEETDB_BASE = "https://sheetdb.io/api/v1/8pmdh33s9fvy8";
+const SHEETS = { PATIENTS:"Patients", TOKENS:"LinkTokens", SCORES:"Score_BDEFS" }; // ajuste "SCORES" se a aba tiver outro nome
+const CODE = "BDEFS";
+const PORTAL_URL = "https://integradaneuropsicologia.github.io/formularios/";
+const RELEASE_KEYS = ["BDEFS"]; // ajuste para a coluna de liberação que você usa
+
+/* ===== HELPERS ===== */
+const $ = s => document.querySelector(s);
+const onlyDigits = s => (s||"").replace(/\D+/g,"");
+const qs = k => new URLSearchParams(location.search).get(k) || "";
+function setBox(id, text, kind="ok"){ const el=$(id); if(!el) return; el.textContent = text; el.className = "msg " + (kind==="ok"?"okbox":kind==="warn"?"warnbox":"errbox"); el.style.display = "block"; }
+function hideBox(id){ const el=$(id); if(el){ el.style.display="none"; el.textContent=""; } }
+function maskCPF(cpf){ const d = onlyDigits(cpf||""); if(d.length!==11) return cpf||""; return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`; }
+function fmtDateISO(iso){ if(!iso) return ""; const [y,m,d] = String(iso||"").split("-"); if(!y||!m||!d) return iso; return `${d}/${m}/${y}`; }
+async function GET(url){ const r=await fetch(url); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); }
+async function sheetSearch(sheet, params){ const usp = new URLSearchParams(params); return GET(`${SHEETDB_BASE}/search?sheet=${encodeURIComponent(sheet)}&${usp.toString()}`); }
+async function sheetCreate(sheet, row){ const r = await fetch(`${SHEETDB_BASE}?sheet=${encodeURIComponent(sheet)}`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ data:[row] }) }); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+async function sheetPatchBy(sheet, column, value, data){ const r = await fetch(`${SHEETDB_BASE}/${encodeURIComponent(column)}/${encodeURIComponent(value)}?sheet=${encodeURIComponent(sheet)}`, { method:"PATCH", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ data }) }); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+function goPortalWithToken(){
+  const TOKEN = qs("token");
+  try{
+    const u = new URL(PORTAL_URL, location.href);
+    u.searchParams.set("token", TOKEN);
+    location.href = u.toString();
+  }catch(_){
+    const sep = PORTAL_URL.includes("?") ? "&" : "?";
+    location.href = PORTAL_URL + sep + "token=" + encodeURIComponent(TOKEN);
+  }
+}
+
+/* ===== ITENS (1..89) ===== */
+/* Cole os textos oficiais no array abaixo (mantive placeholders) */
+const ITEMS = [
+  "Procrastino ou adio fazer as coisas até o último minuto.",
+  "Tenho pouca noção de tempo.",
+  "Desperdiço ou administro mal o meu tempo.",
+  "Sou despreparado para trabalhos ou tarefas a mim atribuídas.",
+  "Não cumpro os prazos das tarefas.",
+  "Tenho problemas para planejar com antecedência ou para me preparar para eventos futuros.",
+  "Esqueço de fazer coisas que deveria fazer.",
+  "Parece que eu não consigo cumprir as metas que estabeleço para mim mesmo.",
+  "Me atraso para o trabalho ou compromissos agendados.",
+  "Parece que eu não consigo manter em mente coisas das quais preciso me lembrar de fazer.",
+  "Parece que eu não consigo finalizar as coisas, a menos que tenham um prazo final imediato.",
+  "Tenho dificuldade em julgar quanto tempo irei gastar para fazer algo ou para ir a algum lugar.",
+  "Tenho dificuldades em me motivar para começar a trabalhar.",
+  "Tenho dificuldade para me motivar a continuar com o meu trabalho e terminá-lo.",
+  "Fico desmotivado para me preparar com antecedência para coisas que devo fazer.",
+  "Tenho problemas em completar uma atividade antes de iniciar uma nova.",
+  "Tenho dificuldade em fazer aquilo que eu digo a mim mesmo para fazer.",
+  "Tenho dificuldades em cumprir as promessas ou compromissos que eu possa ter assumido com outras pessoas.",
+  "Tenho falta de autodisciplina.",
+  "Tenho dificuldades em me organizar ou em fazer meu trabalho de acordo com sua prioridade ou importância; não consigo priorizar bem.",
+  "Acho difícil começar ou continuar a fazer coisas que preciso terminar.",
+  "Parece que eu não consigo antecipar o futuro tanto ou tão bem quanto os outros.",
+  "Parece que eu não consigo me lembrar do que ouvi ou li anteriormente.",
+  "Tenho dificuldades em organizar meus pensamentos.",
+  "Quando me apresentam coisas complicadas de se fazer, eu não consigo manter as informações na cabeça para fazer igual ou fazer corretamente.",
+  "Tenho problemas quando preciso avaliar várias opções para fazer as coisas e ponderar as suas consequências.",
+  "Tenho dificuldades para dizer o que eu quero dizer.",
+  "Sou incapaz de criar ou inventar tantas soluções para problemas quanto os outros.",
+  "As palavras parecem me faltar quando quero explicar alguma coisa para os outros.",
+  "Tenho dificuldade em expressar meus pensamentos por escrito tão bem ou tão rapidamente quanto os outros.",
+  "Sinto que não sou tão criativo ou inventivo quanto os outros com o mesmo nível de inteligência.",
+  "Quando tento cumprir metas ou compromissos, não me acho capaz de pensar em tantas maneiras de fazer as coisas como os outros.",
+  "Tenho dificuldade em aprender atividades novas e complexas tão bem como os outros.",
+  "Tenho dificuldades em explicar as coisas na ordem ou sequência apropriada.",
+  "Não consigo concluir minhas explicações tão rapidamente como os outros.",
+  "Tenho dificuldades em fazer as coisas na ordem ou sequência apropriada.",
+  "Sou incapaz de pensar e reagir rapidamente ou de modo tão eficiente quanto outras pessoas quando ocorrem eventos inesperados.",
+  "Eu sou mais lento do que outros para resolver problemas que encontro no meu dia a dia.",
+  "Fico facilmente distraído por pensamentos irrelevantes quando eu tenho que me concentrar em algo.",
+  "Sou incapaz de entender o que leio tão bem quanto eu deveria; tenho que reler o material para entender seu significado.",
+  "Não consigo focar minha atenção em tarefas ou no trabalho tão bem quanto os outros.",
+  "Fico facilmente confuso.",
+  "Não consigo manter a minha concentração na leitura, em formulários, em palestras ou no trabalho.",
+  "Acho difícil focar no que é importante diante do que não é importante quando estou fazendo alguma coisa.",
+  "Parece que eu não consigo processar informações de modo tão rápido ou preciso quanto os outros.",
+  "Acho difícil tolerar esperas; impaciente.",
+  "Tomo decisões impulsivamente.",
+  "Sou incapaz de inibir minhas reações ou respostas a situações ou aos outros.",
+  "Tenho dificuldade em parar minhas atividades ou comportamento quando deveria.",
+  "Tenho dificuldade em mudar meu comportamento quando me falam sobre os meus erros.",
+  "Faço comentários impulsivos para os outros.",
+  "Sou propenso a fazer coisas sem considerar as consequências.",
+  "Mudo meus planos no último minuto por um capricho ou impulso de último minuto.",
+  "Não levo em consideração fatos relevantes do passado ou experiências passadas antes de responder às situações (eu ajo sem pensar).",
+  "Não tenho consciência das coisas que eu falo ou faço.",
+  "Tenho dificuldade em ser objetivo com as coisas que mexem comigo.",
+  "Acho difícil assumir as perspectivas de outras pessoas sobre um problema ou uma situação.",
+  "Não penso nem falo as coisas comigo mesmo antes de fazer algo.",
+  "Tenho dificuldade para seguir as regras em uma situação.",
+  "Tenho tendência a dirigir mais rápido que os outros (velocidade excessiva).",
+  "Não tolero muito bem situações frustrantes.",
+  "Não consigo inibir minhas emoções tão bem quanto os outros.",
+  "Não olho para frente e não penso sobre quais serão os resultados futuros antes de fazer alguma coisa (não faço previsões).",
+  "Eu me envolvo em atividades de risco mais do que os outros estão propensos a fazer.",
+  "Tenho tendência a pular partes do trabalho e não faço tudo o que devo fazer.",
+  "Sou propenso a abandonar um trabalho mais cedo se ele é chato ou se tenho outras coisas para fazer.",
+  "Não me esforço tanto no meu trabalho como eu deveria ou tanto quanto os outros são capazes.",
+  "Os outros me dizem que sou preguiçoso ou desmotivado.",
+  "Tenho que depender de outras pessoas para me ajudar a terminar meu trabalho.",
+  "As coisas devem ter uma recompensa imediata para mim ou não consigo terminá-las.",
+  "Tenho dificuldades de resistir em fazer algo divertido ou mais interessante quando deveria estar trabalhando.",
+  "O meu desempenho no trabalho não tem consistência na quantidade e na qualidade.",
+  "Sou incapaz de trabalhar tão bem quanto os outros sem supervisão ou instruções frequentes.",
+  "Eu não tenho a força de vontade ou determinação que os outros parecem ter.",
+  "Eu não sou capaz de trabalhar em busca de recompensas em longo prazo ou postergadas assim como outros.",
+  "Eu não consigo resistir em fazer coisas que levam a ganhos imediatos, mesmo quando elas não são boas para mim em longo prazo.",
+  "Fico com raiva ou chateado rapidamente.",
+  "Tenho reações emocionais exageradas.",
+  "Fico excitado com facilidade.",
+  "Sou incapaz de inibir demonstrações emocionais negativas ou positivas.",
+  "Tenho dificuldade em me acalmar uma vez que estou emocionalmente descontrolado.",
+  "Parece que não consigo retomar o controle emocional e ficar mais racional depois que eu estou emocionalmente afetado.",
+  "Parece que não consigo me distrair ou afastar do que está me perturbando emocionalmente, para ajudar a me acalmar. Não consigo redirecionar minha mente para coisas mais positivas.",
+  "Sou incapaz de controlar as minhas emoções para atingir as minhas metas com sucesso ou me dar bem com os outros.",
+  "Permaneço emotivo ou chateado por mais tempo que os outros.",
+  "Acho difícil me afastar de encontros emocionalmente desgastantes com outros ou sair de situações nas quais fiquei muito afetado emocionalmente.",
+  "Eu não consigo redirecionar minhas emoções para soluções mais positivas quando fico chateado.",
+  "Eu não sou capaz de avaliar de forma mais objetiva uma situação emocionalmente perturbadora.",
+  "Não consigo ver o lado positivo de fatos negativos quando sinto emoções fortes."
+].map((t,i)=>({ text: `${i+1}. ${t}` }));
+
+
+/* Pontos de início das seções para exibir cabeçalhos bonitos */
+const SECTION_LABELS = {
+  1:  "Seção 1 — Gerenciamento de tempo (1–21)",
+  22: "Seção 2 — Organização / Resolução de problemas (22–45)",
+  46: "Seção 3 — Autocontrole (46–64)",
+  65: "Seção 4 — Motivação (65–76)",
+  77: "Seção 5 — Regulação emocional (77–89)"
+};
+
+/* ===== SUBSETS para CÁLCULOS ===== */
+const RANGE = (a,b)=>Array.from({length:b-a+1},(_,k)=>a+k);
+const GERENCIAMENTO = RANGE(1,21);
+const ORGANIZACAO   = RANGE(22,45);
+const AUTOCONTROLE  = RANGE(46,64);
+const MOTIVACAO     = RANGE(65,76);
+const REG_EMOCIONAL = RANGE(77,89);
+const ALL_ITEMS     = RANGE(1,89);
+const IFE_TDA       = [1,6,14,16,24,49,50,55,60,65,69];
+
+/* ===== RENDER ===== */
+function renderQuestions(){
+  const host = $("#qs"); host.innerHTML = "";
+
+  ITEMS.forEach((it, idx)=>{
+    const q = idx+1, qn = String(q).padStart(2,"0");
+
+    if (SECTION_LABELS[q]) {
+      const h = document.createElement("div");
+      h.className = "hsec";
+      h.textContent = SECTION_LABELS[q];
+      host.appendChild(h);
+    }
+
+    const row = document.createElement('div');
+    row.className = 'item';
+    row.setAttribute('data-q', String(q));
+
+    const stem = document.createElement('div');
+    stem.className = 'stem';
+    stem.id = `s${qn}`;
+    stem.textContent = it.text;
+
+    // escala como "segmented control" 1..4
+    const scale = document.createElement('div');
+    scale.className = 'scale';
+
+    const seg = document.createElement('div');
+    seg.className = 'seg';
+
+    [
+      {v:1, label:"Raramente"},
+      {v:2, label:"Às vezes"},
+      {v:3, label:"Frequentemente"},
+      {v:4, label:"Muito frequentemente"}
+    ].forEach(({v,label})=>{
+      const id = `q${qn}_${v}`;
+      const inp = document.createElement("input");
+      inp.type = "radio"; inp.name = `q${qn}`; inp.id = id; inp.value = String(v);
+      inp.required = true; inp.setAttribute("aria-labelledby", `s${qn}`);
+
+      const lab = document.createElement("label");
+      lab.className = "opt"; lab.setAttribute("for", id); lab.textContent = label;
+
+      seg.appendChild(inp); seg.appendChild(lab);
+    });
+
+    scale.appendChild(seg);
+    row.append(stem, scale);
+    host.appendChild(row);
+  });
+}
+
+/* ===== ESTADO ===== */
+let patient=null, tokenRow=null, CPF="";
+const TOKEN = qs("token");
+const STORAGE_KEY = `BDEFS_${TOKEN||'anon'}`;
+
+/* ===== BOOT ===== */
+(async function boot(){
+  try{
+    if(!TOKEN){ setBox("#alert","Link inválido (sem token). Solicite um novo link.","err"); return; }
+
+    const trows = await sheetSearch(SHEETS.TOKENS, { token: TOKEN });
+    if(!trows || !trows.length) throw new Error("Token inválido ou expirado.");
+    tokenRow = trows[0];
+    if(String(tokenRow.disabled||"não").toLowerCase()==="sim") throw new Error("Token desativado. Peça um novo link.");
+    if(tokenRow.expires_at && new Date(tokenRow.expires_at) < new Date()) throw new Error("Token expirado. Peça um novo link.");
+    CPF = onlyDigits(tokenRow.cpf||"");
+    if(!CPF) throw new Error("Token sem CPF vinculado.");
+
+    const prows = await sheetSearch(SHEETS.PATIENTS, { cpf: CPF });
+    if(!prows || !prows.length) throw new Error("Paciente não encontrado.");
+    patient = prows[0];
+
+    const isAllowed = RELEASE_KEYS.some(k => String(patient[k]||"").trim().toLowerCase()==="sim");
+    if(!isAllowed){ setBox("#alert","Este formulário não está liberado para você.","err"); return; }
+
+    // Já respondeu?
+    const doneKeys = RELEASE_KEYS.map(k => `${k}_FEITO`);
+    const anyDoneFlag = doneKeys.some(k => String(patient[k]||"").trim().toLowerCase()==="sim");
+    const already = await sheetSearch(SHEETS.SCORES, { cpf: CPF, code: CODE });
+    if(anyDoneFlag || (already && already.length)){
+      setBox("#alert","Você já respondeu este formulário. Voltando ao portal…","ok");
+      setTimeout(goPortalWithToken, 1200); return;
+    }
+
+    // Render
+    renderPatientInfo();
+    renderQuestions();
+    restoreDraft();
+    updateProgress();
+
+    $("#pacInfo").style.display = "grid";
+    $("#form").style.display = "block";
+    $("#progressWrap").style.display = "block";
+    hideBox("#alert");
+
+  }catch(err){
+    console.error(err);
+    setBox("#alert", err.message || "Falha ao abrir o formulário. Tente novamente mais tarde.", "err");
+  }
+})();
+
+function renderPatientInfo(){
+  const g = $("#pacInfo"); g.innerHTML="";
+  const info = [
+    ["Nome", patient.nome || "-"],
+    ["CPF", maskCPF(patient.cpf)],
+    ["Nascimento", fmtDateISO(patient.data_nascimento)],
+    ["E-mail", patient.email || "-"],
+    ["WhatsApp", patient.whatsapp || "-"]
+  ];
+  for(const [k,v] of info){
+    const div = document.createElement("div");
+    div.className = "info";
+    div.innerHTML = `<b>${k}</b><div>${v||"-"}</div>`;
+    g.appendChild(div);
+  }
+}
+
+/* ===== RASCUNHO LOCAL ===== */
+function saveDraft(){
+  const data = {};
+  for(let i=1;i<=ITEMS.length;i++){
+    const qn = String(i).padStart(2,"0");
+    const sel = document.querySelector(`input[name="q${qn}"]:checked`);
+    if(sel) data[`q${qn}`] = Number(sel.value);
+  }
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }catch(e){ console.warn("Sem espaço para salvar rascunho"); }
+}
+function restoreDraft(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const data = JSON.parse(raw);
+    for(const [k,v] of Object.entries(data||{})){
+      const el = document.querySelector(`input[name="${k}"][value="${v}"]`);
+      if(el){ el.checked = true; }
+    }
+  }catch(e){ /* ignore */ }
+}
+function clearDraft(){ localStorage.removeItem(STORAGE_KEY); }
+
+function countAnswered(){ let c=0; for(let i=1;i<=ITEMS.length;i++){ const qn=String(i).padStart(2,'0'); if(document.querySelector(`input[name="q${qn}"]:checked`)) c++; } return c; }
+function updateProgress(){ const answered = countAnswered(); const total = ITEMS.length; $("#progressText").textContent = `Progresso: ${answered}/${total}`; $("#bar").style.width = `${(answered/total)*100}%`; }
+
+/* ===== EVENTOS DE UI ===== */
+addEventListener('change', (e)=>{ if(e.target && e.target.matches('input[type="radio"][name^="q"]')){ saveDraft(); updateProgress(); } });
+$("#btnSave").addEventListener('click', ()=>{ saveDraft(); setBox('#msg','Rascunho salvo neste dispositivo.','ok'); });
+$("#clearDraft").addEventListener('click', ()=>{ clearDraft(); setBox('#msg','Rascunho apagado.','warn'); });
+
+/* ===== UTIL ===== */
+function sumSet(indices){
+  let s = 0;
+  for(const i of indices){
+    const qn = String(i).padStart(2,'0');
+    const sel = document.querySelector(`input[name="q${qn}"]:checked`);
+    s += sel ? Number(sel.value) : 0;
+  }
+  return s;
+}
+function count34(indices){
+  let c = 0;
+  for(const i of indices){
+    const qn = String(i).padStart(2,'0');
+    const sel = document.querySelector(`input[name="q${qn}"]:checked`);
+    if(sel && Number(sel.value) >= 3) c++;
+  }
+  return c;
+}
+
+/* ===== SUBMIT ===== */
+let sending=false;
+$("#form").addEventListener("submit", async (e)=>{
+  e.preventDefault(); if(sending) return; sending = true; hideBox("#msg");
+  const btn = $("#btnSubmit"); const originalText = btn.textContent; btn.disabled = true; btn.textContent = "Enviando…";
+  try{
+    if(!patient) throw new Error("Sessão inválida. Recarregue o link.");
+
+    // Validação: todas respondidas
+    for(let i=1;i<=ITEMS.length;i++){
+      const qn = String(i).padStart(2,'0');
+      const sel = document.querySelector(`input[name="q${qn}"]:checked`);
+      if(!sel){
+        const row = document.querySelector(`.item[data-q="${i}"]`);
+        if(row) row.scrollIntoView({behavior:'smooth', block:'center'});
+        throw new Error(`Responda a questão ${i}.`);
+      }
+    }
+
+    // Escores
+    const tempo   = sumSet(GERENCIAMENTO);
+    const org     = sumSet(ORGANIZACAO);
+    const autoC   = sumSet(AUTOCONTROLE);
+    const motivo  = sumSet(MOTIVACAO);
+    const regEmo  = sumSet(REG_EMOCIONAL);
+    const total   = sumSet(ALL_ITEMS);
+    const ifeTda  = sumSet(IFE_TDA);
+    const sintomas34 = count34(ALL_ITEMS);
+
+    const categoria_csv = [
+      `Gerenciamento de tempo=${tempo}`,
+      `Organização/resolução de problemas=${org}`,
+      `autocontrole=${autoC}`,
+      `motivacao=${motivo}`,
+      `regulacao_emocional=${regEmo}`,
+      `Indice de funções executivas para TDAH=${ifeTda}`,
+      `Sintomas de disfunção executiva=${sintomas34}`,
+      `Escala de Disfunção executiva total=${total}`
+    ].join(',');
+
+    await sheetCreate(SHEETS.SCORES, {
+      result_id: `${patient.cpf}_${CODE}_${Date.now()}`,
+      token: TOKEN,
+      cpf: patient.cpf,
+      code: CODE,
+      source: "paciente",
+      submitted_at: new Date().toISOString(),
+      total: total,
+      categoria: categoria_csv,
+      metrics: ""
+    });
+
+    // Marca como feito
+    const doneUpdates = {};
+    RELEASE_KEYS.map(k=>`${k}_FEITO`).forEach(k=>{ if(k in patient) doneUpdates[k] = "sim"; });
+    if(Object.keys(doneUpdates).length===0) doneUpdates[`${RELEASE_KEYS[0]}_FEITO`] = "sim";
+    await sheetPatchBy(SHEETS.PATIENTS, "cpf", patient.cpf, doneUpdates);
+
+    clearDraft();
+    setBox("#msg","Formulário enviado. Voltando ao portal…","ok");
+    setTimeout(goPortalWithToken, 1100);
+
+  }catch(err){
+    console.error(err);
+    setBox("#msg", err.message || "Falha ao enviar. Tente novamente.", "err");
+    sending = false; btn.disabled = false; btn.textContent = originalText;
+  }
+});
+</script>
+</body>
+</html>
